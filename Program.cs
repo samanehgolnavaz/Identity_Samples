@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddIdentityCore<User>(options => { });
 builder.Services.AddScoped<IUserStore<User>,UserStore>();
+builder.Services.AddAuthentication("cookies").AddCookie(options => options.LoginPath="/Home/Login");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -21,8 +22,10 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllerRoute(
     name: "default",
