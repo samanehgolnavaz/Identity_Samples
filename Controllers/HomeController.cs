@@ -10,11 +10,11 @@ namespace Identity_Samples.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly UserManager<IdentityUser> userManager;
+        private readonly UserManager<User> userManager;
 
         private readonly ILogger<HomeController> _logger;
 
-        public HomeController(ILogger<HomeController> logger, UserManager<IdentityUser> userManager)
+        public HomeController(ILogger<HomeController> logger, UserManager<User> userManager)
         {
             _logger = logger;
             this.userManager = userManager;
@@ -57,7 +57,7 @@ namespace Identity_Samples.Controllers
                 var user = await userManager.FindByNameAsync(model.UserName);
                 if (user == null)
                 {
-                    user = new IdentityUser
+                    user = new User
                     {
                         Id = Guid.NewGuid().ToString(),
                         UserName = model.UserName
