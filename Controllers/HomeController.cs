@@ -11,13 +11,15 @@ namespace Identity_Samples.Controllers
     public class HomeController : Controller
     {
         private readonly UserManager<User> userManager;
-        private readonly IUserClaimsPrincipalFactory<User> claimsPrincipalFactory;  
-            
+        private readonly IUserClaimsPrincipalFactory<User> claimsPrincipalFactory;
+        private readonly SignInManager<User> signInManager;   
         public HomeController(UserManager<User> userManager,
-            IUserClaimsPrincipalFactory<User> claimsPrincipalFactory)
+            IUserClaimsPrincipalFactory<User> claimsPrincipalFactory,
+            SignInManager<User> signInManager)
         {
             this.userManager = userManager;
-            this.claimsPrincipalFactory= claimsPrincipalFactory;
+            this.claimsPrincipalFactory = claimsPrincipalFactory;
+            this.signInManager = signInManager;
         }
 
         public IActionResult Index()
@@ -80,11 +82,10 @@ namespace Identity_Samples.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = await userManager.FindByNameAsync(model.UserName);
-                if (user!=null && await userManager.CheckPasswordAsync(user,model.Password))
+                var signInResult = await signInManager.PasswordSignInAsync(model.UserName,
+                    model.Password,false, false);
+                if(signInResult.Succeeded)
                 {
-                    var principal=await claimsPrincipalFactory.CreateAsync(user);
-                    await HttpContext.SignInAsync("Identity.Application",principal);
                     return RedirectToAction("Index");
                 }
             }
