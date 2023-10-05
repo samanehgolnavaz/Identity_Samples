@@ -11,13 +11,13 @@ namespace Identity_Samples.Controllers
     public class HomeController : Controller
     {
         private readonly UserManager<User> userManager;
-
-        private readonly ILogger<HomeController> _logger;
-
-        public HomeController(ILogger<HomeController> logger, UserManager<User> userManager)
+        private readonly IUserClaimsPrincipalFactory<User> claimsPrincipalFactory;  
+            
+        public HomeController(UserManager<User> userManager,
+            IUserClaimsPrincipalFactory<User> claimsPrincipalFactory)
         {
-            _logger = logger;
             this.userManager = userManager;
+            this.claimsPrincipalFactory= claimsPrincipalFactory;
         }
 
         public IActionResult Index()
@@ -83,10 +83,8 @@ namespace Identity_Samples.Controllers
                 var user = await userManager.FindByNameAsync(model.UserName);
                 if (user!=null && await userManager.CheckPasswordAsync(user,model.Password))
                 {
-                    var identity = new ClaimsIdentity("cookies");
-                    identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, user.Id));
-                    identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
-                    await HttpContext.SignInAsync("cookies", new ClaimsPrincipal(identity));
+                    var principal=await claimsPrincipalFactory.CreateAsync(user);
+                    await HttpContext.SignInAsync("Identity.Application",principal);
                     return RedirectToAction("Index");
                 }
             }

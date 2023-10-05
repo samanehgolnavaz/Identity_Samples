@@ -11,10 +11,13 @@ builder.Services.AddDbContext<UserDbContext>(
     opt => opt.UseSqlServer(connectionString,sql =>sql.MigrationsAssembly(migrationAssembly))) ;
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddIdentityCore<User>(options => { });
-builder.Services.AddScoped<IUserStore<User>,
-    UserOnlyStore<User, UserDbContext>>();
-builder.Services.AddAuthentication("cookies").AddCookie(options => options.LoginPath="/Home/Login");
+builder.Services.AddIdentity<User, IdentityRole>(options => { })
+    .AddEntityFrameworkStores<UserDbContext>();
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>,
+    UserClaimPrincipalFactory>();
+
+//builder.Services.AddAuthentication("cookies").AddCookie(options => options.LoginPath="/Home/Login");
+builder.Services.ConfigureApplicationCookie(options => options.LoginPath = "/Home/Login");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
