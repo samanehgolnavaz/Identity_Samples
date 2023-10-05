@@ -11,9 +11,13 @@ builder.Services.AddDbContext<UserDbContext>(
     opt => opt.UseSqlServer(connectionString,sql =>sql.MigrationsAssembly(migrationAssembly))) ;
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddIdentity<User, IdentityRole>(options => { })
+builder.Services.AddIdentity<User, IdentityRole>(options =>
+{
+    //options.SignIn.RequireConfirmedEmail = true;
+})
     .AddEntityFrameworkStores<UserDbContext>()
-    .AddDefaultTokenProviders();
+    .AddDefaultTokenProviders()
+    .AddTokenProvider < EmailConfirmationTokenProvider <User>> ("emailconf");
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>,
     UserClaimPrincipalFactory>();
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>

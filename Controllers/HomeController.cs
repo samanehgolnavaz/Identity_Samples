@@ -82,14 +82,22 @@ namespace Identity_Samples.Controllers
         {
             if (ModelState.IsValid)
             {
-                var signInResult = await signInManager.PasswordSignInAsync(model.UserName,
-                    model.Password,false, false);
-                if(signInResult.Succeeded)
+                var user = await userManager.FindByNameAsync(model.UserName);
+                if (user != null && await userManager.CheckPasswordAsync(user, model.Password))
                 {
+                    if (!await userManager.IsEmailConfirmedAsync(user))
+                    {
+                        ModelState.AddModelError("","Email is not confirmed");
+                        return View();
+                    }
+                    var principal = await claimsPrincipalFactory.CreateAsync(user);
+                    await HttpContext.SignInAsync("Identity.Application", principal);
                     return RedirectToAction("Index");
                 }
+
+                ModelState.AddModelError("", "Invalid username and password");
+
             }
-            ModelState.AddModelError("","Invalid username and password");
             return View();
         }
 
