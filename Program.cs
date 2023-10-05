@@ -14,14 +14,21 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddIdentity<User, IdentityRole>(options =>
 {
     //options.SignIn.RequireConfirmedEmail = true;
+    options.Tokens.EmailConfirmationTokenProvider = "emailconf";
 })
     .AddEntityFrameworkStores<UserDbContext>()
     .AddDefaultTokenProviders()
     .AddTokenProvider < EmailConfirmationTokenProvider <User>> ("emailconf");
+
+
+
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>,
     UserClaimPrincipalFactory>();
 builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
 options.TokenLifespan = TimeSpan.FromHours(3));
+
+builder.Services.Configure<EmailConfirmationTokenProviderOptions>(options =>
+options.TokenLifespan = TimeSpan.FromDays(2));
 
 //builder.Services.AddAuthentication("cookies").AddCookie(options => options.LoginPath="/Home/Login");
 builder.Services.ConfigureApplicationCookie(options => options.LoginPath = "/Home/Login");
