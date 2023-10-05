@@ -92,5 +92,60 @@ namespace Identity_Samples.Controllers
             ModelState.AddModelError("","Invalid username and password");
             return View();
         }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await userManager.FindByEmailAsync(model.Email);
+                if (user!= null)
+                {
+                    var token = await userManager.GeneratePasswordResetTokenAsync(user);
+                    var resetUrl = Url.Action("ResetPassword","Home",
+                      new {token=token,email=user.Email},Request.Scheme);
+                    System.IO.File.WriteAllText("resetLink.txt",resetUrl);
+                }
+                else
+                {
+                    // email user and inform them that they do not have an account
+                }
+                return View("Success");
+            }
+            return View();
+        }
+        [HttpGet]
+        public IActionResult ResetPassword(string token,string email)
+        {
+            return View(new ResetPasswordModel { Token=token,Email=email});
+        }
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                var user = await userManager.FindByEmailAsync(model.Email);
+                if (user!= null) 
+                {
+                    var result = await userManager.ResetPasswordAsync(user, model.Token, model.Password);
+                    if (!result.Succeeded)
+                    {
+                        foreach (var error in result.Errors)
+                        {
+                            ModelState.AddModelError("", error.Description);
+                        }
+                        return View();
+                    }
+                    return View("Success");
+                }
+                ModelState.AddModelError("","Invalid Request");
+            }
+            return View();
+        }
     }
 }

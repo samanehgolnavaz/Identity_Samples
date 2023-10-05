@@ -1,11 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Identity_Samples
+namespace Identity_Samples.Models
 {
     public class LoginModel
     {
         public string UserName { get; set; }
-        [DataType (DataType.Password)]
+        [DataType(DataType.Password)]
         public string Password { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Identity_Samples
+namespace Identity_Samples.Models
 {
     public class RegisterModel
     {
@@ -9,7 +9,7 @@ namespace Identity_Samples
         public string Password { get; set; }
         [Compare("Password")]
         [DataType(DataType.Password)]
-        public string  ConfirmPassword { get; set; }
-       
+        public string ConfirmPassword { get; set; }
+
     }
 }

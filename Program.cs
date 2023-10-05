@@ -12,9 +12,12 @@ builder.Services.AddDbContext<UserDbContext>(
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddIdentity<User, IdentityRole>(options => { })
-    .AddEntityFrameworkStores<UserDbContext>();
+    .AddEntityFrameworkStores<UserDbContext>()
+    .AddDefaultTokenProviders();
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<User>,
     UserClaimPrincipalFactory>();
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+options.TokenLifespan = TimeSpan.FromHours(3));
 
 //builder.Services.AddAuthentication("cookies").AddCookie(options => options.LoginPath="/Home/Login");
 builder.Services.ConfigureApplicationCookie(options => options.LoginPath = "/Home/Login");
