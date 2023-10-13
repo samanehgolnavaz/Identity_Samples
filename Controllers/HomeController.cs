@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Security.Claims;
 
@@ -94,6 +95,14 @@ namespace Identity_Samples.Controllers
                     {
                         var ValidProviders =
                             await userManager.GetValidTwoFactorProvidersAsync(user);
+                        ///add token provider
+                        if (ValidProviders.Contains(userManager.Options.Tokens.AuthenticatorTokenProvider))
+                        {
+                            await HttpContext.SignInAsync(IdentityConstants.TwoFactorUserIdScheme,
+                                Store2FA(user.Id,userManager.Options.Tokens.AuthenticatorTokenProvider));
+                            return RedirectToAction("TwoFactor");
+                               
+                        }
                         if (ValidProviders.Contains("Email"))
                         {
                             var token = await userManager.GenerateTwoFactorTokenAsync(user, "Email");
@@ -103,15 +112,13 @@ namespace Identity_Samples.Controllers
 
                             return RedirectToAction("TwoFactor");
                         }
-                    }
-                  
+                    }                  
                     var principal = await claimsPrincipalFactory.CreateAsync(user);
                     await HttpContext.SignInAsync("Identity.Application", principal);
                     return RedirectToAction("Index");
                 }
 
                 ModelState.AddModelError("", "Invalid username and password");
-
             }
             return View();
         }
@@ -217,6 +224,35 @@ namespace Identity_Samples.Controllers
                 }
                 ModelState.AddModelError("","Invalid Request");
             }
+            return View();
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RegisterAuthenticator()
+        {
+            var user=await userManager.GetUserAsync(User);
+            var authenticatorKey=await userManager.GetAuthenticatorKeyAsync(user);  
+            if (authenticatorKey==null)
+            {
+                await userManager.ResetAuthenticatorKeyAsync(user);
+                authenticatorKey = await userManager.GetAuthenticatorKeyAsync(user);
+            }
+            return View(new RegisterAuthenticatorModel {AuthenticatorKey= authenticatorKey});
+        }
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RegisterAuthenticator(RegisterAuthenticatorModel model)
+        {
+            var user=await userManager.GetUserAsync(User);
+            var isValid = await userManager.VerifyTwoFactorTokenAsync(user,
+                userManager.Options.Tokens.AuthenticatorTokenProvider, model.Code);
+            if (!isValid)
+            {
+                ModelState.AddModelError("", "Code is invalid");
+                return View();
+            }
+            await userManager.SetTwoFactorEnabledAsync(user, true);
             return View();
         }
     }
