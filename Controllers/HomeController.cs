@@ -90,6 +90,21 @@ namespace Identity_Samples.Controllers
                         ModelState.AddModelError("","Email is not confirmed");
                         return View();
                     }
+                    if (await userManager.GetTwoFactorEnabledAsync(user))
+                    {
+                        var ValidProviders =
+                            await userManager.GetValidTwoFactorProvidersAsync(user);
+                        if (ValidProviders.Contains("Email"))
+                        {
+                            var token = await userManager.GenerateTwoFactorTokenAsync(user, "Email");
+                            System.IO.File.WriteAllText("email2sv.txt", token);
+                            await HttpContext.SignInAsync(IdentityConstants.TwoFactorUserIdScheme,
+                                Store2FA(user.Id, "Email"));
+
+                            return RedirectToAction("TwoFactor");
+                        }
+                    }
+                  
                     var principal = await claimsPrincipalFactory.CreateAsync(user);
                     await HttpContext.SignInAsync("Identity.Application", principal);
                     return RedirectToAction("Index");
@@ -99,6 +114,17 @@ namespace Identity_Samples.Controllers
 
             }
             return View();
+        }
+
+        private ClaimsPrincipal Store2FA(string userId, string provider)
+        {
+            var identity = new ClaimsIdentity(new List<Claim>
+            { 
+
+                new Claim("sub",userId),
+                new Claim("amr",provider)
+            },IdentityConstants.TwoFactorUserIdScheme);
+            return new ClaimsPrincipal(identity);
         }
 
         [HttpGet]
@@ -150,6 +176,44 @@ namespace Identity_Samples.Controllers
                         return View();
                     }
                     return View("Success");
+                }
+                ModelState.AddModelError("","Invalid Request");
+            }
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult TwoFactor()
+        {
+            return View();
+        }
+        [HttpPost]
+        public async Task<IActionResult> TwoFactor(TwoFactorModel model)
+        {
+            var result = await HttpContext.AuthenticateAsync(IdentityConstants.TwoFactorUserIdScheme);
+            if (!result.Succeeded)
+            {
+                ModelState.AddModelError("","You login request has expired,please start over");
+                return View();
+            }
+            //sun =subject=name identify
+            if (ModelState.IsValid)
+            {
+                var user = await userManager.FindByIdAsync(result.Principal.FindFirstValue("sub"));
+                if (user!= null) 
+                {
+                    var isValid = await userManager.VerifyTwoFactorTokenAsync(user,
+                    result.Principal.FindFirstValue("amr"), model.Token);
+
+                    if (isValid)
+                    {
+                        await HttpContext.SignOutAsync(IdentityConstants.TwoFactorUserIdScheme);
+                        var claimsPrincipal=await claimsPrincipalFactory.CreateAsync(user);
+                        await HttpContext.SignInAsync(IdentityConstants.ApplicationScheme, claimsPrincipal);
+                        return RedirectToAction("Index");
+                    }
+                    ModelState.AddModelError("", "Invalid token");
+                    return View();
                 }
                 ModelState.AddModelError("","Invalid Request");
             }
